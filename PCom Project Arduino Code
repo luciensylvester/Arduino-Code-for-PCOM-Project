@@ -1,0 +1,322 @@
+#include <Metro.h>
+
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include "Adafruit_LEDBackpack.h"
+
+#include <Adafruit_NeoPixel.h>
+#ifdef __AVR__
+// #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
+#endif
+
+//variables to use for metro library in coinText() and insertText functions
+int c;
+int d;
+int threshold = 790;//Variable storing threshold for Photoresistor, if it drops beneath it'll trigger the second state
+boolean paid = false;
+
+Adafruit_AlphaNum4 alpha4 = Adafruit_AlphaNum4();
+
+int redLED = 10;
+int ldrPin = A0;
+#define ledPin 6
+#define NUMPIXELS 200
+#define envelopeIn A0
+Adafruit_NeoPixel pixels(NUMPIXELS, redLED, NEO_GRB + NEO_KHZ800);
+uint32_t Red = pixels.Color(255, 0, 0);
+uint32_t OFF = pixels.Color(0, 0, 0);
+
+Metro newCharacter = Metro(500);  // Instantiate an instance
+Metro redTime = Metro(20000);
+
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  pinMode(redLED, OUTPUT);
+  pinMode(ldrPin, INPUT);
+  alpha4.begin(0x70 );
+  pixels.begin();
+  pixels.clear();
+  pixels.setBrightness(80);
+  Serial.begin(9600);
+  //pinMode(, OUTPUT);
+  allwhite();
+  //delay(5000);
+  pixels.clear();
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  //get analog reading from LDRa
+  pixels.clear();
+  alpha4.clear();
+  int ldrReading = analogRead(A0);
+  Serial.println(ldrReading);
+  //delay(50);
+
+  if (ldrReading > threshold && paid==false) {
+
+    alpha4.clear();
+    digitalWrite(redLED, LOW);
+    //Serial.println("IM ELSE");
+
+    insertText();
+    pixels.clear();
+    allOff();
+  }
+
+
+
+
+ else if (ldrReading < threshold && paid==false) {
+    //  digitalWrite(redLED, HIGH);
+    //  delay(50);
+    cycleForFirstDigit();
+    startUpLights();
+    // coinText();
+    pixels.clear();
+    allRed();
+    delay(100);
+    paid = true;
+    pixels.clear();
+
+
+  }
+
+
+  else if (paid == true) {
+    coinText();
+    twentyRed();
+   
+   paid = false;
+
+
+  }
+
+}
+
+  //writing function to make LEDs flicker as they turn on
+  //like old flurorescent strip lights
+
+  void startUpLights() {
+    //digitalWrite(redLED, HIGH);
+    pixels.setBrightness(30);
+    allRed();
+    delay(50);
+    allOff();
+    //digitalWrite(redLED, LOW);
+    delay(1000);
+    //digitalWrite(redLED, HIGH);
+    allRed();
+    delay(100);
+    //igitalWrite(redLED, LOW);
+    allOff();
+    delay(500);
+    pixels.setBrightness(80);
+    //digitalWrite(redLED, HIGH);
+    allRed();
+    delay(20);
+    //digitalWrite(redLED, LOW);
+    allOff();
+    delay(400);
+    // digitalWrite(redLED, HIGH);
+    // allRed();
+    //  delay(20000);
+    //digitalWrite(redLED, LOW);
+    allOff();
+    //delay(20);
+  }
+
+  //function for third state with keeps neopixels on for 20 seconds
+
+  void twentyRed() {
+
+    while (redTime.check() != 1) {
+      allRed();
+
+      Serial.println("off");
+
+    }
+    allOff();
+  }
+
+
+//function for second state which cycles through numbers until it reaches 666
+
+  void cycleForFirstDigit() {
+
+    int cycleOne[] = {'0',
+                      '2',
+                      '7',
+                      '5',
+                      '7',
+                      '2',
+                      '9',
+                      '8',
+                      '9',
+                      '1',
+                      '5',
+                      '7',
+                      '9',
+                      '8',
+                      '9',
+                      '5',
+                      '8',
+                      '7',
+                      '9',
+                      '3',
+                      '0',
+                      '1',
+                      '5',
+                      '2',
+                      '3',
+                      '8',
+                      '7',
+                      '0',
+                      '1',
+                      '2',
+                      '3',
+                      '4',
+                      '5',
+                      '6'
+                     };
+    int cycleTwo[] = {'1',
+                      '9',
+                      '3',
+                      '7',
+                      '5',
+                      '4',
+                      '9',
+                      '9',
+                      '8',
+                      '3',
+                      '7',
+                      '8',
+                      '4',
+                      '3',
+                      '7',
+                      '5',
+                      '0',
+                      '2',
+                      '9',
+                      '5',
+                      '9',
+                      '5',
+                      '8',
+                      '6',
+                      '7',
+                      '1',
+                      '4',
+                      '5',
+                      '3',
+                      '2',
+                      '7',
+                      '9',
+                      '0',
+                      '6'
+                     };
+    int cycleThree[] = {'1', '2', '7', '6', '9', '2', '1', '1', '3', '8', '9', '6', '2', '9', '8', '4', '9', '9', '3', '5', '1', '4', '5', '7', '1', '9', '0', '2', '6', '6', '0', '2', '6', '9', '8', '1', '6'};
+
+    for (int n = 0; n < 34; n++) {
+      alpha4.writeDigitAscii(0, cycleOne[n]);
+      alpha4.writeDigitAscii(1, cycleTwo[n]);
+      alpha4.writeDigitAscii(2, cycleOne[n]);
+
+
+      alpha4.writeDisplay();
+      delay(100);
+      // delay(10000);
+
+      //    if (n>=16) {
+      //      alpha4.writeDigitAscii(0, cycleOne[16]);
+      ////      delay(2000);
+      //      alpha4.writeDisplay();
+      //      break;
+      //
+      //    }
+
+    }
+  }
+
+
+  //function which displays 'Insert Coin' until coin is accepted
+  void insertText() {
+
+    int insertCoin[] = {' ', ' ', ' ', 'I', 'N', 'S', 'E', 'R', 'T', ' ', 'O', 'F', 'F', 'E', 'R', 'I', 'N', 'G', ' ', ' ', ' ', ' ', ' ',};
+    if (newCharacter.check() == 1) {
+
+      alpha4.clear();
+
+      alpha4.writeDigitAscii(0, insertCoin[c]);
+
+      alpha4.writeDigitAscii(1, insertCoin[c + 1]);
+
+      alpha4.writeDigitAscii(2, insertCoin[c + 2]);
+
+      alpha4.writeDigitAscii(3, insertCoin[c + 3]);
+      alpha4.writeDisplay();
+      c = c + 1;
+
+      if (c >= 18) {
+        c = 0;
+      }
+    }
+  }
+
+//function for third state which makes the alphanumeric display read "OFFERING ACCEPTED"
+  void coinText() {
+    int coinAccepted[] = {' ', ' ', ' ', 'O', 'F', 'F', 'E', 'R', 'I', 'N', 'G', ' ', 'A', 'C', 'C', 'E', 'P', 'T', 'E', 'D', ' ', ' ', ' '
+                         };
+    //if (newCharacter.check() == 1) {
+for(d=0;d<20;d++){
+      alpha4.clear();
+
+      alpha4.writeDigitAscii(0, coinAccepted[d]);
+
+      alpha4.writeDigitAscii(1,  coinAccepted[d + 1]);
+
+      alpha4.writeDigitAscii(2,  coinAccepted[d + 2]);
+
+      alpha4.writeDigitAscii(3,  coinAccepted[d + 3]);
+       delay(500);
+      alpha4.writeDisplay();
+}
+//      d = d + 1;
+//
+//      if (d >= 20) {
+//        d = 0;
+//      }
+//    }
+  }
+
+
+//function which just sets all Neopixels to red
+  void allRed() {
+
+    pixels.clear();
+    for (int i = 0; i < NUMPIXELS; i++) {
+      pixels.setPixelColor(i, pixels.Color(255, 0, 0));
+    }
+    pixels.show();
+  }
+
+  //function which just sets all Neopixels to off
+  void allOff() {
+
+    pixels.clear();
+    for (int i = 0; i < NUMPIXELS; i++) {
+      pixels.setPixelColor(i, pixels.Color(0, 0, 0));
+    }
+    pixels.show();
+  }
+
+//function which sets all the neopixels to white
+  void allwhite() {
+
+    pixels.clear();
+    for (int i = 0; i < NUMPIXELS; i++) {
+      pixels.setPixelColor(i, pixels.Color(255, 255, 255));
+    }
+    pixels.show();
+  }
